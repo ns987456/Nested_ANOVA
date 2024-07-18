@@ -1,0 +1,219 @@
+
+
+
+if(!require(devtools)) install.packages("devtools")
+devtools::install_github("thoree/BIAS.data", force = TRUE)
+
+library(BIAS.data)
+
+# read data
+data(riverfishing)
+
+# show first 7 rows of riverfishing dataset.
+head(riverfishing,7)
+
+# Apply summary function for data summarization. 
+summary(riverfishing)
+
+# Apply str function for finding out internal structure.
+str(riverfishing)
+
+# the dimension of an object.
+dim(riverfishing)
+
+#  categorical tabulation of data with the variable and its frequency.
+table(riverfishing$Species)
+table(riverfishing$Period)
+table(riverfishing$Region)
+
+# getting class attributes using the class() function before converting the text variables (character) to factors.
+class(riverfishing$Region)
+class(riverfishing$Species)
+class(riverfishing$Period)
+
+# Convert All Character Variables To Factors
+riverfishing[sapply(riverfishing, is.character)] <- lapply(riverfishing[sapply(riverfishing, is.character)], as.factor)
+######
+##
+
+
+
+
+
+
+
+
+
+
+
+library(magrittr)
+install.packages("dplyr")
+library(dplyr)
+
+
+riverfishing<- riverfishing %>%
+  mutate(Region= factor(Region, c("Northern", "Mid", "Western", "Southern")))
+
+
+
+riverfishing<- riverfishing %>%
+  mutate(Species= factor(Species, c("Salmon", "Seatrout")))
+
+
+summary(riverfishing)
+table(riverfishing$Region,riverfishing$Species, riverfishing$Period)
+
+
+
+
+######
+
+options(contrasts = c("contr.treatment", "contr.ploy"))
+
+lm.model= lm (Catches ~ Species+ Region + Period + 
+                Species:Region + Species:Period + Region:Period + 
+                Period:Region:Species , data=riverfishing)
+anova(lm.model)
+
+summary(lm.model)
+
+
+install.packages("effects")
+library(effects)
+plot(Effect("Region", lm.model))
+plot(Effect("Period", lm.model))
+plot(Effect("Species", lm.model))
+plot(allEffects( lm.model))
+
+
+plot(lm.model)
+
+install.packages("mixlm")
+library(mixlm)
+
+pair.tests=simple.glht(lm.model, effect="Region", corr="Tukey")
+print(pair.tests)
+plot(pair.tests)
+                        
+plot(lm.model)
+pair.tests=simple.glht(lm.model, effect="Period", corr="Tukey", level=0.95)
+print(pair.tests)
+plot(pair.tests)
+
+
+plot(lm.model)
+pair.tests=simple.glht(lm.model, effect="Species", corr="Tukey", level=0.95)
+print(pair.tests)
+plot(pair.tests)
+                        
+                        
+                        
+                        
+ggplot(riverfishing)+
+  geom_boxplot(aes(x=riverfishing$Species, y=riverfishing$Catches))
+
+ggplot(riverfishing)+
+  geom_boxplot(aes(x=riverfishing$Region, y=riverfishing$Catches))
+
+
+ggplot(riverfishing)+
+  geom_boxplot(aes(x=riverfishing$Period, y=riverfishing$Catches))
+
+
+
+
+ggplot(riverfishing)+
+  geom_boxplot(aes(x=Species, y=Catches))+
+  facet_wrap(~Region)
+
+
+
+#######
+####################### Transformed data and plotting
+
+
+## Make a new variable 
+
+riverfishing<- riverfishing %>%
+  mutate(log_Catches = log10(riverfishing$Catches))
+summary(riverfishing)
+
+## Make a boxplot 
+library(ggplot2)
+
+ggplot(riverfishing)+
+  geom_boxplot(aes(y =log_Catches  , x =Period , fill = `Species`)) +
+  facet_grid(~ Region)
+
+
+
+#######
+####################### ANOVA again
+
+##model 1(third order interactions)
+
+
+options(contrasts = c("contr.treatment", "contr.ploy"))
+lm.model1= lm (log_Catches ~ Species+ Region + Period + 
+                Species:
+                Region + Species:Period + Region:Period + 
+                Period:Region:Species , data=riverfishing)
+anova(lm.model1)
+summary(lm.model1)
+library(effects)
+plot(Effect("Region", lm.model1))
+plot(Effect("Period", lm.model1))
+plot(Effect("Species", lm.model1))
+plot(allEffects( lm.model1))
+
+plot(lm.model1)
+
+
+##model 2(second order interactions)
+
+options(contrasts = c("contr.treatment", "contr.ploy"))
+lm.model2= lm (log_Catches ~ Species+ Region + Period + 
+                Species:
+                Region + Species:Period + Region:Period , data=riverfishing)
+anova(lm.model2)
+summary(lm.model2)
+library(effects)
+plot(Effect("Region", lm.model2))
+plot(Effect("Period", lm.model2))
+plot(Effect("Species", lm.model2))
+plot(allEffects( lm.model2))
+
+plot(lm.model2)
+
+##model 3(first order interactions)
+
+options(contrasts = c("contr.treatment", "contr.ploy"))
+lm.model3= lm (log_Catches ~ Species+ Region + Period  , data=riverfishing)
+anova(lm.model3)
+summary(lm.model3)
+library(effects)
+plot(Effect("Region", lm.model3))
+plot(Effect("Period", lm.model3))
+plot(Effect("Species", lm.model3))
+plot(allEffects( lm.model3))
+
+plot(lm.model3)
+
+
+
+####Partial F-test
+
+
+anova(lm.model1, lm.model2)
+
+anova(lm.model1, lm.model3)
+anova(lm.model2, lm.model3)
+
+
+####
+
+ggplot(riverfishing, aes(Region,log_Catches))+
+  geom_point(aes(colour = factor(Period)))
+
+
+
